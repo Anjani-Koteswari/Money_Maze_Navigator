@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); 
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
@@ -17,18 +17,20 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+// MySQL connection (Clever Cloud)
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Anknk@3663',
-    database: 'money_maze_navigator'
+    host: 'bkye9jogrdgovgyqdhf1-mysql.services.clever-cloud.com',
+    user: 'u2ssz7mhbct9qkak',
+    password: '52aT3tAbyryNqkk7rTLZ',
+    database: 'bkye9jogrdgovgyqdhf1',
+    port: 3306
 });
 
 db.connect(err => {
     if (err) {
         throw err;
     }
-    console.log('MySQL Connected...');
+    console.log('MySQL Connected to Clever Cloud...');
 });
 
 // Register endpoint

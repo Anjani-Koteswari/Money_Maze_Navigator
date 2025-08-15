@@ -12,10 +12,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const showPieChartBtn = document.querySelector('.show-pie-chart');
     const showBarChartBtn = document.querySelector('.show-bar-chart');
     const setBudgetBtn = document.querySelector('.set-budget');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     const pieChartCanvas = document.getElementById('myPieChart');
     const barChartCanvas = document.getElementById('myBarChart');
-    let currentChart = null; // Track the current chart
+    let currentChart = null;
 
     if (expenseForm && expenseNameInput && expenseAmountInput && expenseTableBody) {
         updateTable();
@@ -60,6 +61,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        // Logout Button Functionality
+        logoutBtn?.addEventListener('click', function () {
+            localStorage.clear(); // Clears all user data
+            window.location.href = 'login.html'; // Redirect to login
+        });
+
         function addExpense() {
             const name = expenseNameInput.value;
             const amount = parseFloat(expenseAmountInput.value);
@@ -71,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateTable();
                 checkBudgetAlert(name, amount);
                 clearInputs();
-                checkSalaryAlert(); // Check salary alert for next month
+                checkSalaryAlert();
             } else {
                 alert('Please fill in all fields.');
             }
@@ -101,8 +108,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const totalExpenditureElement = document.getElementById('totalExpenditure');
             if (totalExpenditureElement) {
                 totalExpenditureElement.textContent = `Total Expenditure: ${total.toFixed(2)}`;
-            } else {
-                console.error('Element with id "totalExpenditure" not found.');
             }
         }
 
@@ -125,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         function showPieChart() {
-            hideCurrentChart(); // Hide any currently displayed chart
+            hideCurrentChart();
             pieChartCanvas.style.display = 'block';
 
             const data = {};
@@ -146,20 +151,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Expense Distribution'
-                        }
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Expense Distribution' }
                     }
                 }
             });
         }
 
         function showBarChart() {
-            hideCurrentChart(); // Hide any currently displayed chart
+            hideCurrentChart();
             barChartCanvas.style.display = 'block';
 
             const data = {};
@@ -180,43 +180,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Expenses Bar Chart'
-                        }
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Expenses Bar Chart' }
                     }
                 }
             });
         }
 
         function hideCurrentChart() {
-            if (currentChart) {
-                currentChart.destroy(); // Destroy the current chart
-            }
-            // Hide both canvases
+            if (currentChart) currentChart.destroy();
             pieChartCanvas.style.display = 'none';
             barChartCanvas.style.display = 'none';
         }
 
         function deleteExpense(index) {
-            expenses.splice(index, 1); // Remove the expense from the array
-            localStorage.setItem('expenses', JSON.stringify(expenses)); // Update local storage
-            updateTable(); // Refresh the table to reflect the changes
+            expenses.splice(index, 1);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            updateTable();
         }
 
         function editExpense(index) {
             const expense = expenses[index];
             expenseNameInput.value = expense.name;
             expenseAmountInput.value = expense.amount;
-
-            // Remove the expense from the array and local storage after editing
             expenses.splice(index, 1);
             localStorage.setItem('expenses', JSON.stringify(expenses));
-
-            // Update the table to reflect the change
             updateTable();
         }
 
@@ -232,9 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 button.addEventListener('click', function () {
                     const index = this.getAttribute('data-index');
                     const confirmDelete = confirm('Are you sure you want to delete this expense?');
-                    if (confirmDelete) {
-                        deleteExpense(index); // Call the delete function
-                    }
+                    if (confirmDelete) deleteExpense(index);
                 });
             });
         }

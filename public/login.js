@@ -1,10 +1,14 @@
+const API_URL = window.location.origin.includes("localhost")
+  ? "http://localhost:3000"
+  : "https://money-maze-navigator.onrender.com";
+
 document.getElementById('loginForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    fetch('http://localhost:3000/login', {
+    fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -14,15 +18,15 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     .then(response => response.json())
     .then(data => {
         if (data.message === 'Welcome to Money Maze Navigator!') {
-            window.location.href = 'welcome.html'; // Redirect to welcome page
+            window.location.href = 'welcome.html';
         } else {
             document.getElementById('loginStatus').textContent = data.message;
-            document.getElementById('loginStatus').style.color = 'red'; // Highlight error message in red
+            document.getElementById('loginStatus').style.color = 'red';
         }
     })
     .catch(error => {
         console.error('Error:', error);
         document.getElementById('loginStatus').textContent = 'An error occurred. Please try again.';
-        document.getElementById('loginStatus').style.color = 'red'; // Highlight error message in red
+        document.getElementById('loginStatus').style.color = 'red';
     });
 });

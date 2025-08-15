@@ -1,3 +1,7 @@
+const API_URL = window.location.origin.includes("localhost")
+  ? "http://localhost:3000"
+  : "https://money-maze-navigator.onrender.com";
+
 document.getElementById('registerForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
@@ -14,18 +18,18 @@ document.getElementById('registerForm').addEventListener('submit', function(even
         return;
     }
 
-    fetch('http://localhost:3000/register', {
+    fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({ firstName, lastName, email, pincode, username, password })
     })
-    .then(response => response.json()) // Expecting JSON response
+    .then(response => response.json())
     .then(data => {
-        alert(data.message); // Display the message from the server
+        alert(data.message);
         if (data.redirect) {
-            window.location.href = data.redirect; // Redirect to the login page
+            window.location.href = data.redirect;
         }
     })
     .catch(error => {

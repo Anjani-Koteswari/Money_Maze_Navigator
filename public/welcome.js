@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         const userData = await sessionRes.json();
-        userId = userData.id;  // ✅ use DB userId
+        userId = userData.id;
         document.getElementById('welcomeUser').textContent = `Welcome, ${userData.username}`;
     } catch (err) {
         console.error("Session check failed", err);
@@ -96,7 +96,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         expenses = await apiGet("/api/expenses") || [];
         const salData = await apiGet("/api/salary") || {};
         salary = salData.salary || 0;
-        budgets = await apiGet("/api/budget") || {};
+
+        // ✅ Convert budgets array → object for easy lookup
+        const budgetData = await apiGet("/api/budget") || [];
+        budgets = {};
+        budgetData.forEach(b => {
+            budgets[b.name] = b.amount;
+        });
+
         updateTable();
     }
 
@@ -107,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (name && !isNaN(amount)) {
             const newExpense = await apiPost("/api/expenses", { name, amount });
             if (newExpense) {
-                expenses.push(newExpense);
+                expenses.push(newExpense); // ✅ push directly
                 updateTable();
                 clearInputs();
                 checkBudgetAlert(name, amount);

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // ✅ Check session from backend
     try {
-        const sessionRes = await fetch('https://money-maze-navigator.onrender.com/me', {
+        const sessionRes = await fetch('https://money-maze-navigator.onrender.com/api/me', {
             method: "GET",
             credentials: "include"
         });
@@ -14,8 +14,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         const userData = await sessionRes.json();
-        userId = userData.id;
-        document.getElementById('welcomeUser').textContent = `Welcome, ${userData.username}`;
+        if (!userData.success || !userData.user) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        userId = userData.user.id;
+        document.getElementById('welcomeUser').textContent = `Welcome, ${userData.user.username}`;
     } catch (err) {
         console.error("Session check failed", err);
         window.location.href = "login.html";

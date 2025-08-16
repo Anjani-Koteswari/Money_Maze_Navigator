@@ -12,9 +12,22 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      padding-top: 40px;
     }
+
+    /* Main Title */
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #fff; /* white for contrast */
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Register Card */
     .register-container {
       width: 100%;
       max-width: 480px;
@@ -23,22 +36,19 @@
       border-radius: 12px;
       box-shadow: 0px 6px 18px rgba(0,0,0,0.2);
     }
-     h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-weight: bold;
-      color: #28a741;
-    }
+
     h2 {
       text-align: center;
       margin-bottom: 20px;
       font-weight: bold;
       color: #28a745;
     }
+
     .form-label {
       font-weight: 500;
       color: #444;
     }
+
     .form-control {
       border-radius: 8px;
       padding: 10px;
@@ -49,6 +59,7 @@
       border-color: #28a745;
       box-shadow: 0 0 6px rgba(40,167,69,0.4);
     }
+
     .btn-custom {
       width: 100%;
       padding: 12px;
@@ -64,16 +75,18 @@
       background-color: #218838;
       transform: scale(1.02);
     }
+
     p.status-text {
       font-size: 14px;
       margin: 5px 0;
     }
     .status-text.error {
-      color: #dc3545; /* red */
+      color: #dc3545;
     }
     .status-text.success {
-      color: #28a745; /* green */
+      color: #28a745;
     }
+
     .login-link {
       text-align: center;
       margin-bottom: 15px;
@@ -90,11 +103,16 @@
   </style>
 </head>
 <body>
-   <h1>Money Maze Navigator</h1>
+  
+  <!-- Main Title -->
+  <h1>Money Maze Navigator</h1>
+
+  <!-- Register Box -->
   <div class="register-container">
     <h2>Register</h2>
-    <a href="login.html">Login here</a>
-
+    <div class="login-link">
+      <a href="login.html">Already have an account? Login here</a>
+    </div>
 
     <form id="registerForm">
       <div class="mb-3">
@@ -143,5 +161,3 @@
   <script src="register.js"></script>
 </body>
 </html>
-
-

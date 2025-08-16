@@ -1,56 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register - Money Maze Navigator</title>
-  <link rel="stylesheet" href="styles.css" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: Arial, sans-serif;
+    }
+    .register-container {
+      max-width: 450px;
+      margin: 80px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #28a745; /* Green heading */
+      font-weight: bold;
+    }
+    .btn-custom {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      background-color: #28a745;
+      border: none;
+      color: #fff;
+      transition: background 0.3s;
+    }
+    .btn-custom:hover {
+      background-color: #218838;
+    }
+    .form-control {
+      border-radius: 8px;
+    }
+    p.status-text {
+      font-size: 14px;
+      margin: 5px 0;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-  <!-- Top bar with app title and a Login heading/link -->
-  <header class="topbar" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:12px 16px;">
-    <h1 style="margin:0;">Money Maze Navigator</h1>
-    <h2 style="margin:0;font-size:1.1rem;">
-      <a href="login.html" id="loginHeading">Login</a>
-    </h2>
-  </header>
 
-  <main style="padding:16px;">
-    <h2>Register</h2>
-    <h3 style="margin-top:-6px;font-weight:500;">
-      Already have an account? <a href="login.html">Login here</a>
-    </h3>
+  <div class="container">
+    <div class="register-container">
+      <h2>Register</h2>
+      <p class="text-center">Already have an account? <a href="/login">Login here</a></p>
 
-    <form id="registerForm">
-      <label for="firstName">First Name:</label>
-      <input type="text" id="firstName" name="firstName" required /><br />
+      <form id="registerForm">
+        <div class="mb-3">
+          <label for="firstName" class="form-label">First Name:</label>
+          <input type="text" id="firstName" name="firstName" class="form-control" required>
+        </div>
 
-      <label for="lastName">Last Name:</label>
-      <input type="text" id="lastName" name="lastName" required /><br />
+        <div class="mb-3">
+          <label for="lastName" class="form-label">Last Name:</label>
+          <input type="text" id="lastName" name="lastName" class="form-control" required>
+        </div>
 
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required />
-      <p id="emailStatus" style="font-size: 14px; margin: 5px 0;"></p>
+        <div class="mb-3">
+          <label for="email" class="form-label">Email:</label>
+          <input type="email" id="email" name="email" class="form-control" required>
+          <p id="emailStatus" class="status-text"></p>
+        </div>
 
-      <label for="pincode">Pincode:</label>
-      <input type="text" id="pincode" name="pincode" required /><br />
+        <div class="mb-3">
+          <label for="pincode" class="form-label">Pincode:</label>
+          <input type="text" id="pincode" name="pincode" class="form-control" required>
+        </div>
 
-      <label for="username">Username:</label>
-      <input type="text" id="username" name="username" required />
-      <p id="usernameStatus" style="font-size: 14px; margin: 5px 0;"></p>
+        <div class="mb-3">
+          <label for="username" class="form-label">Username:</label>
+          <input type="text" id="username" name="username" class="form-control" required>
+          <p id="usernameStatus" class="status-text"></p>
+        </div>
 
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required />
-      <p id="passwordStrength" style="font-size: 14px; margin: 5px 0;"></p>
+        <div class="mb-3">
+          <label for="password" class="form-label">Password:</label>
+          <input type="password" id="password" name="password" class="form-control" required>
+          <p id="passwordStrength" class="status-text"></p>
+        </div>
 
-      <label for="confirmPassword">Confirm Password:</label>
-      <input type="password" id="confirmPassword" name="confirmPassword" required /><br />
+        <div class="mb-3">
+          <label for="confirmPassword" class="form-label">Confirm Password:</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+        </div>
 
-      <button type="submit">Register</button>
-      <p id="registrationStatus" style="font-size: 14px; margin: 5px 0;"></p>
-    </form>
-  </main>
+        <button type="submit" class="btn btn-custom">Register</button>
+        <p id="registrationStatus" class="status-text"></p>
+      </form>
+    </div>
+  </div>
 
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="register.js"></script>
 </body>
 </html>
-

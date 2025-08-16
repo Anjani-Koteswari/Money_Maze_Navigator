@@ -3,8 +3,8 @@ const API_URL = "https://money-maze-navigator.onrender.com";
 document.getElementById('registerForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
-    const firstName = document.getElementById('first_Name').value.trim();
-    const lastName = document.getElementById('last_Name').value.trim();
+    const firstName = document.getElementById('first_name').value.trim();
+    const lastName = document.getElementById('last_name').value.trim();
     const email = document.getElementById('email').value.trim();
     const pincode = document.getElementById('pincode').value.trim();
     const username = document.getElementById('username').value.trim();
@@ -133,4 +133,5 @@ function checkPasswordStrength(password) {
     }
     return "Weak";
 }
+
 

@@ -58,12 +58,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const salaryInput = parseFloat(prompt('Enter your monthly Income'));
             if (!isNaN(salaryInput) && salaryInput > 0) {
                 salary = salaryInput;
-                await fetch(`https://money-maze-navigator.onrender.com/api/salary`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ salary })
-                });
+                await apiPost("/api/salary", { salary });
                 alert(`Monthly Salary set: ${salary}`);
             } else {
                 alert('Please enter a valid salary amount.');
@@ -78,12 +73,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const budgetInputAmount = parseFloat(prompt('Enter the budget amount:'));
             if (budgetInputName && !isNaN(budgetInputAmount) && budgetInputAmount > 0) {
                 budgets[budgetInputName] = budgetInputAmount;
-                await fetch(`https://money-maze-navigator.onrender.com/api/budget`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ name: budgetInputName, amount: budgetInputAmount })
-                });
+                await apiPost("/api/budget", { name: budgetInputName, amount: budgetInputAmount });
                 alert(`Budget for ${budgetInputName} set: ${budgetInputAmount}`);
             } else {
                 alert('Please enter valid budget details.');
@@ -103,44 +93,26 @@ document.addEventListener('DOMContentLoaded', async function () {
     // === FUNCTIONS ===
 
     async function loadData() {
-        const expRes = await fetch(`https://money-maze-navigator.onrender.com/api/expenses`, {
-            credentials: "include"
-        });
-        expenses = await expRes.json();
-
-        const salRes = await fetch(`https://money-maze-navigator.onrender.com/api/salary`, {
-            credentials: "include"
-        });
-        const salData = await salRes.json();
+        expenses = await apiGet("/api/expenses") || [];
+        const salData = await apiGet("/api/salary") || {};
         salary = salData.salary || 0;
-
-        const budRes = await fetch(`https://money-maze-navigator.onrender.com/api/budget`, {
-            credentials: "include"
-        });
-        const budData = await budRes.json();
-        budgets = budData || {};
-
+        budgets = await apiGet("/api/budget") || {};
         updateTable();
     }
 
     async function addExpense() {
-        const name = expenseNameInput.value;
+        const name = expenseNameInput.value.trim();
         const amount = parseFloat(expenseAmountInput.value);
 
         if (name && !isNaN(amount)) {
-            const res = await fetch(`https://money-maze-navigator.onrender.com/api/expenses`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ name, amount })
-            });
-            const newExpense = await res.json();
-
-            expenses.push(newExpense);
-            updateTable();
-            clearInputs();
-            checkBudgetAlert(name, amount);
-            checkSalaryAlert();
+            const newExpense = await apiPost("/api/expenses", { name, amount });
+            if (newExpense) {
+                expenses.push(newExpense);
+                updateTable();
+                clearInputs();
+                checkBudgetAlert(name, amount);
+                checkSalaryAlert();
+            }
         } else {
             alert('Please fill in all fields.');
         }
@@ -173,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     function checkSalaryAlert() {
         const totalExpenditure = expenses.reduce((sum, expense) => sum + expense.amount, 0);
         if (salary > 0 && totalExpenditure > salary) {
-            alert('Warning: Budget exceeds the salary for this month!');
+            alert('⚠️ Warning: Expenses exceed your salary!');
         }
     }
 
@@ -184,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     function checkBudgetAlert(name, amount) {
         if (budgets[name] && amount > budgets[name]) {
-            alert(`Warning: You have exceeded the budget for ${name}!`);
+            alert(`⚠️ Warning: You have exceeded the budget for ${name}!`);
         }
     }
 
@@ -238,8 +210,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.querySelectorAll('.delete-expense').forEach(button => {
             button.addEventListener('click', async function () {
                 const id = this.getAttribute('data-id');
-                const confirmDelete = confirm('Are you sure you want to delete this expense?');
-                if (confirmDelete) {
+                if (confirm('Are you sure you want to delete this expense?')) {
                     await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
                         method: "DELETE",
                         credentials: "include"
@@ -267,5 +238,33 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             });
         });
+    }
+
+    // 🔹 Helper API wrappers
+    async function apiGet(url) {
+        try {
+            const res = await fetch(`https://money-maze-navigator.onrender.com${url}`, {
+                credentials: "include"
+            });
+            if (res.ok) return await res.json();
+        } catch (err) {
+            console.error("GET failed:", url, err);
+        }
+        return null;
+    }
+
+    async function apiPost(url, body) {
+        try {
+            const res = await fetch(`https://money-maze-navigator.onrender.com${url}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(body)
+            });
+            if (res.ok) return await res.json();
+        } catch (err) {
+            console.error("POST failed:", url, err);
+        }
+        return null;
     }
 });

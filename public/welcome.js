@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // ✅ Check session from backend
     try {
-        const sessionRes = await fetch('https://money-maze-navigator.onrender.com/api/me', {
+        const sessionRes = await fetch('https://money-maze-navigator.onrender.com/me', {
             method: "GET",
             credentials: "include"
         });
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const salaryInput = parseFloat(prompt('Enter your monthly Income'));
             if (!isNaN(salaryInput) && salaryInput > 0) {
                 salary = salaryInput;
-                await apiPost("/api/salary", { salary });
+                await apiPost("/salary", { salary });
                 alert(`Monthly Salary set: ${salary}`);
             } else {
                 alert('Please enter a valid salary amount.');
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const budgetInputAmount = parseFloat(prompt('Enter the budget amount:'));
             if (budgetInputName && !isNaN(budgetInputAmount) && budgetInputAmount > 0) {
                 budgets[budgetInputName] = budgetInputAmount;
-                await apiPost("/api/budget", { name: budgetInputName, amount: budgetInputAmount });
+                await apiPost("/budget", { name: budgetInputName, amount: budgetInputAmount });
                 alert(`Budget for ${budgetInputName} set: ${budgetInputAmount}`);
             } else {
                 alert('Please enter valid budget details.');
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // 🔹 Logout
         logoutBtn?.addEventListener('click', async function () {
-            await fetch('https://money-maze-navigator.onrender.com/api/logout', {
+            await fetch('https://money-maze-navigator.onrender.com/logout', {
                 method: "POST",
                 credentials: "include"
             });
@@ -93,12 +93,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     // === FUNCTIONS ===
 
     async function loadData() {
-        expenses = await apiGet("/api/expenses") || [];
-        const salData = await apiGet("/api/salary") || {};
+        expenses = await apiGet("/expenses") || [];
+        const salData = await apiGet("/salary") || {};
         salary = salData.salary || 0;
 
         // ✅ Convert budgets array → object for easy lookup
-        const budgetData = await apiGet("/api/budget") || [];
+        const budgetData = await apiGet("/budget") || [];
         budgets = {};
         budgetData.forEach(b => {
             budgets[b.name] = b.amount;
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const amount = parseFloat(expenseAmountInput.value);
 
         if (name && !isNaN(amount)) {
-            const newExpense = await apiPost("/api/expenses", { name, amount });
+            const newExpense = await apiPost("/expenses", { name, amount });
             if (newExpense) {
                 expenses.push(newExpense); // ✅ push directly
                 updateTable();
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             button.addEventListener('click', async function () {
                 const id = this.getAttribute('data-id');
                 if (confirm('Are you sure you want to delete this expense?')) {
-                    await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
+                    await fetch(`https://money-maze-navigator.onrender.com/expenses/${id}`, {
                         method: "DELETE",
                         credentials: "include"
                     });
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const expense = expenses.find(e => e.id == id);
                 const newAmount = parseFloat(prompt('Enter new amount:', expense.amount));
                 if (!isNaN(newAmount)) {
-                    await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
+                    await fetch(`https://money-maze-navigator.onrender.com/expenses/${id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         credentials: "include",

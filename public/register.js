@@ -38,7 +38,14 @@ document.getElementById('registerForm').addEventListener('submit', function(even
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: "include",
-        body: JSON.stringify({ firstName, lastName, email, pincode, username, password })
+        body: JSON.stringify({
+            first_name: firstName,   // ✅ match backend
+            last_name: lastName,     // ✅ match backend
+            email,
+            pincode,
+            username,
+            password
+        })
     })
     .then(response => response.json())
     .then(data => {

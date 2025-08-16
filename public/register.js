@@ -32,14 +32,16 @@ document.getElementById('registerForm').addEventListener('submit', function(even
     fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: "include",  // ✅ important: send/receive cookies for session
         body: JSON.stringify({ firstName, lastName, email, pincode, username, password })
     })
     .then(response => response.json())
     .then(data => {
         statusMessage.textContent = data.message;
         statusMessage.style.color = data.success ? "green" : "red";
-        if (data.redirect) {
-            window.location.href = data.redirect;
+        if (data.success) {
+            // ✅ redirect only if backend session is set
+            window.location.href = "/welcome.html";
         }
     })
     .catch(error => {

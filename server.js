@@ -12,7 +12,7 @@ const app = express();
 // ===== Middleware =====
 app.use(bodyParser.json());
 app.use(cors({
-  origin: true,        // allow all origins (can restrict later)
+  origin: true,        // allow all origins (adjust later if needed)
   credentials: true    // allow sending cookies
 }));
 app.use(cookieParser());
@@ -39,7 +39,7 @@ db.connect(err => {
 // ===== Middleware: verify JWT from cookies =====
 function verifyToken(req, res, next) {
   const token = req.cookies.token;
-  if (!token) return res.status(403).json({ success: false, message: 'No token' });
+  if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -94,16 +94,25 @@ app.post('/login', (req, res) => {
     if (!passwordIsValid) return res.status(401).json({ success: false, message: 'Invalid password' });
 
     // Generate JWT and store in HTTP-only cookie
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '2h' });
+    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '2h' });
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true,        // ✅ true because Render uses HTTPS
-      sameSite: 'none',    // ✅ allows frontend from other domains
+      secure: true,        // Render uses HTTPS
+      sameSite: 'none',
       maxAge: 2 * 60 * 60 * 1000
     });
 
     res.status(200).json({ success: true, message: 'Login successful' });
+  });
+});
+
+// ===== Get current user =====
+app.get('/api/me', verifyToken, (req, res) => {
+  db.query('SELECT id, username, email, firstName, lastName FROM users WHERE id = ?', [req.userId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: 'Server error' });
+    if (results.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, user: results[0] });
   });
 });
 
@@ -117,19 +126,8 @@ app.post('/logout', (req, res) => {
   res.json({ success: true, message: 'Logged out' });
 });
 
-// ===== Protected Route =====
-app.get('/welcome', verifyToken, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'welcome.html'));
-});
-
-// ===== Catch-all (for React SPA or fallback) =====
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
 // ===== Start server =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
-

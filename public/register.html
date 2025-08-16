@@ -4,105 +4,134 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register - Money Maze Navigator</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+
   <style>
     body {
-      background-color: #f4f6f9;
-      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #28a745, #20c997);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .register-container {
-      max-width: 450px;
-      margin: 80px auto;
-      padding: 30px;
+      width: 100%;
+      max-width: 480px;
       background: #fff;
-      border-radius: 10px;
-      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 35px;
+      border-radius: 12px;
+      box-shadow: 0px 6px 18px rgba(0,0,0,0.2);
     }
     h2 {
       text-align: center;
       margin-bottom: 20px;
-      color: #28a745; /* Green heading */
       font-weight: bold;
+      color: #28a745;
+    }
+    .form-label {
+      font-weight: 500;
+      color: #444;
+    }
+    .form-control {
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      transition: all 0.3s;
+    }
+    .form-control:focus {
+      border-color: #28a745;
+      box-shadow: 0 0 6px rgba(40,167,69,0.4);
     }
     .btn-custom {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       font-size: 16px;
       border-radius: 8px;
       background-color: #28a745;
       border: none;
       color: #fff;
-      transition: background 0.3s;
+      font-weight: 600;
+      transition: background 0.3s, transform 0.2s;
     }
     .btn-custom:hover {
       background-color: #218838;
-    }
-    .form-control {
-      border-radius: 8px;
+      transform: scale(1.02);
     }
     p.status-text {
       font-size: 14px;
       margin: 5px 0;
-      color: #666;
+    }
+    .status-text.error {
+      color: #dc3545; /* red */
+    }
+    .status-text.success {
+      color: #28a745; /* green */
+    }
+    .login-link {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .login-link a {
+      color: #28a745;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .login-link a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
+  <div class="register-container">
+    <h2>Register</h2>
+    <p class="login-link">Already have an account? <a href="/login">Login here</a></p>
 
-  <div class="container">
-    <div class="register-container">
-      <h2>Register</h2>
-      <p class="text-center">Already have an account? <a href="/login">Login here</a></p>
+    <form id="registerForm">
+      <div class="mb-3">
+        <label for="firstName" class="form-label">First Name</label>
+        <input type="text" id="firstName" name="firstName" class="form-control" required>
+      </div>
 
-      <form id="registerForm">
-        <div class="mb-3">
-          <label for="firstName" class="form-label">First Name:</label>
-          <input type="text" id="firstName" name="firstName" class="form-control" required>
-        </div>
+      <div class="mb-3">
+        <label for="lastName" class="form-label">Last Name</label>
+        <input type="text" id="lastName" name="lastName" class="form-control" required>
+      </div>
 
-        <div class="mb-3">
-          <label for="lastName" class="form-label">Last Name:</label>
-          <input type="text" id="lastName" name="lastName" class="form-control" required>
-        </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" name="email" class="form-control" required>
+        <p id="emailStatus" class="status-text"></p>
+      </div>
 
-        <div class="mb-3">
-          <label for="email" class="form-label">Email:</label>
-          <input type="email" id="email" name="email" class="form-control" required>
-          <p id="emailStatus" class="status-text"></p>
-        </div>
+      <div class="mb-3">
+        <label for="pincode" class="form-label">Pincode</label>
+        <input type="text" id="pincode" name="pincode" class="form-control" required>
+      </div>
 
-        <div class="mb-3">
-          <label for="pincode" class="form-label">Pincode:</label>
-          <input type="text" id="pincode" name="pincode" class="form-control" required>
-        </div>
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" id="username" name="username" class="form-control" required>
+        <p id="usernameStatus" class="status-text"></p>
+      </div>
 
-        <div class="mb-3">
-          <label for="username" class="form-label">Username:</label>
-          <input type="text" id="username" name="username" class="form-control" required>
-          <p id="usernameStatus" class="status-text"></p>
-        </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-control" required>
+        <p id="passwordStrength" class="status-text"></p>
+      </div>
 
-        <div class="mb-3">
-          <label for="password" class="form-label">Password:</label>
-          <input type="password" id="password" name="password" class="form-control" required>
-          <p id="passwordStrength" class="status-text"></p>
-        </div>
+      <div class="mb-3">
+        <label for="confirmPassword" class="form-label">Confirm Password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+      </div>
 
-        <div class="mb-3">
-          <label for="confirmPassword" class="form-label">Confirm Password:</label>
-          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
-        </div>
-
-        <button type="submit" class="btn btn-custom">Register</button>
-        <p id="registrationStatus" class="status-text"></p>
-      </form>
-    </div>
+      <button type="submit" class="btn btn-custom">Register</button>
+      <p id="registrationStatus" class="status-text"></p>
+    </form>
   </div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="register.js"></script>
 </body>
 </html>

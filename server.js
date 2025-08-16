@@ -109,11 +109,17 @@ app.post('/login', (req, res) => {
 
 // ===== Get current user =====
 app.get('/api/me', verifyToken, (req, res) => {
-  db.query('SELECT id, username, email, firstName, lastName FROM users WHERE id = ?', [req.userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Server error' });
-    if (results.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, user: results[0] });
-  });
+  db.query(
+    'SELECT id, username, email, firstName, lastName FROM users WHERE id = ?',
+    [req.userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ success: false, message: 'Server error' });
+      if (results.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+
+      // ✅ Send user data directly (no "user" wrapper) so frontend works
+      res.json(results[0]);
+    }
+  );
 });
 
 // ===== Logout =====
@@ -124,6 +130,16 @@ app.post('/logout', (req, res) => {
     sameSite: 'none'
   });
   res.json({ success: true, message: 'Logged out' });
+});
+
+// ===== Default route (serve login.html) =====
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// ===== Fallback for unknown routes =====
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // ===== Start server =====

@@ -1,83 +1,93 @@
-/* General styles */
+/* General Page Styling */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 40px;
+  margin: 0;
 }
 
-.main-content {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+/* Main Title */
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
-.container {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+/* Form Container (Login/Register Box) */
+.form-container {
+  width: 100%;
+  max-width: 500px;
+  background: #fff;
+  padding: 35px;
+  border-radius: 12px;
+  box-shadow: 0px 6px 18px rgba(0,0,0,0.2);
+  margin-bottom: 30px;
 }
 
-h1, h2 {
-    text-align: center;
-    color: #333333;
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #28a745;
 }
 
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
+/* Labels */
+.form-label {
+  font-weight: 500;
+  color: #444;
 }
 
-input[type="text"], input[type="email"], input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+/* Input Fields */
+.form-control {
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  transition: all 0.3s;
+  width: 100%;
+  margin-bottom: 15px;
+}
+.form-control:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 6px rgba(40,167,69,0.4);
+  outline: none;
 }
 
-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    width: 100%;
-    font-size: 16px;
+/* Buttons */
+.btn-custom {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  background-color: #28a745;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  transition: background 0.3s, transform 0.2s;
+  cursor: pointer;
+}
+.btn-custom:hover {
+  background-color: #218838;
+  transform: scale(1.02);
 }
 
-button:hover {
-    background-color: #45a049;
+/* Links (Login/Register Switch) */
+.auth-link {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 14px;
 }
-
-p {
-    text-align: center;
-    margin-top: 10px;
+.auth-link a {
+  color: #28a745;
+  font-weight: 600;
+  text-decoration: none;
 }
-
-a {
-    color: #4CAF50;
-}
-
-/* Highlight styles */
-#registrationStatus {
-    color: red;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-#passwordStrength {
-    font-style: italic;
-    margin-bottom: 10px;
-}
-
-/* Media query for responsiveness (optional) */
-@media (max-width: 600px) {
-    .container {
-        padding: 10px;
-    }
+.auth-link a:hover {
+  text-decoration: underline;
 }

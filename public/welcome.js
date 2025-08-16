@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             document.getElementById("usernameDisplay").textContent = data.username;
             fetchExpenses();
+            fetchBudgets();
         }
     } catch (err) {
         console.error("Session check error:", err);
@@ -31,9 +32,12 @@ function showNotification(msg, type = "error") {
     setTimeout(() => notif.textContent = "", 4000);
 }
 
-// ✅ Expense state
+// ✅ State
 let expenses = [];
+let budgets = [];
 let chart;
+
+// ---------------- EXPENSES ----------------
 
 // Fetch Expenses
 async function fetchExpenses() {
@@ -41,7 +45,7 @@ async function fetchExpenses() {
         const res = await fetch(`${API_URL}/api/expenses`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch expenses");
         expenses = await res.json();
-        updateTable();
+        updateExpenseTable();
         updateChart();
     } catch (err) {
         console.error("Error loading expenses:", err);
@@ -49,7 +53,7 @@ async function fetchExpenses() {
     }
 }
 
-// ✅ Add Expense
+// Add Expense
 document.getElementById("expenseForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -73,7 +77,6 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
 
         const newExpense = await res.json();
 
-        // ✅ Ensure id/date exist
         expenses.push({
             ...newExpense,
             date: newExpense.date || new Date().toISOString(),
@@ -81,7 +84,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
         });
 
         document.getElementById("expenseForm").reset();
-        updateTable();
+        updateExpenseTable();
         updateChart();
         checkSalaryBudget();
     } catch (err) {
@@ -90,7 +93,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
     }
 });
 
-// ✅ Delete Expense
+// Delete Expense
 async function deleteExpense(id) {
     try {
         const res = await fetch(`${API_URL}/api/expenses/${id}`, {
@@ -101,7 +104,7 @@ async function deleteExpense(id) {
         if (!res.ok) throw new Error("Failed to delete expense");
 
         expenses = expenses.filter(exp => exp.id !== id);
-        updateTable();
+        updateExpenseTable();
         updateChart();
         checkSalaryBudget();
     } catch (err) {
@@ -110,8 +113,8 @@ async function deleteExpense(id) {
     }
 }
 
-// ✅ Update Table
-function updateTable() {
+// Update Expense Table
+function updateExpenseTable() {
     const tbody = document.getElementById("expenseTableBody");
     tbody.innerHTML = "";
 
@@ -132,7 +135,101 @@ function updateTable() {
         expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2);
 }
 
-// ✅ Update Chart (dynamic colors)
+// ---------------- BUDGETS ----------------
+
+// Fetch Budgets
+async function fetchBudgets() {
+    try {
+        const res = await fetch(`${API_URL}/api/budgets`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch budgets");
+        budgets = await res.json();
+        updateBudgetTable();
+    } catch (err) {
+        console.error("Error loading budgets:", err);
+        showNotification("Unable to load budgets. Please try again later.");
+    }
+}
+
+// Add Budget
+document.getElementById("budgetForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const category = document.getElementById("budgetCategory").value.trim();
+    const amount = parseFloat(document.getElementById("budgetAmount").value.trim());
+
+    if (!category || isNaN(amount) || amount <= 0) {
+        showNotification("⚠️ Please enter valid budget details.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/api/budgets`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ category, amount })
+        });
+
+        if (!res.ok) throw new Error("Failed to add budget");
+
+        const newBudget = await res.json();
+
+        budgets.push({
+            ...newBudget,
+            created_at: newBudget.created_at || new Date().toISOString(),
+            id: newBudget.id || Date.now()
+        });
+
+        document.getElementById("budgetForm").reset();
+        updateBudgetTable();
+        checkSalaryBudget();
+    } catch (err) {
+        console.error("Add budget error:", err);
+        showNotification("❌ Could not add budget. Try again.");
+    }
+});
+
+// Delete Budget
+async function deleteBudget(id) {
+    try {
+        const res = await fetch(`${API_URL}/api/budgets/${id}`, {
+            method: "DELETE",
+            credentials: "include"
+        });
+
+        if (!res.ok) throw new Error("Failed to delete budget");
+
+        budgets = budgets.filter(b => b.id !== id);
+        updateBudgetTable();
+        checkSalaryBudget();
+    } catch (err) {
+        console.error("Delete budget error:", err);
+        showNotification("❌ Could not delete budget. Try again.");
+    }
+}
+
+// Update Budget Table
+function updateBudgetTable() {
+    const tbody = document.getElementById("budgetTableBody");
+    tbody.innerHTML = "";
+
+    budgets.forEach(b => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${b.category}</td>
+            <td>₹${b.amount}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteBudget(${b.id})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById("totalBudget").textContent =
+        budgets.reduce((sum, b) => sum + b.amount, 0).toFixed(2);
+}
+
+// ---------------- CHART ----------------
 function updateChart() {
     const ctx = document.getElementById("expenseChart").getContext("2d");
     const data = expenses.reduce((acc, exp) => {
@@ -154,24 +251,23 @@ function updateChart() {
     });
 }
 
-// ✅ Salary & Budget Checks
+// ---------------- SALARY & BUDGET CHECK ----------------
 function checkSalaryBudget() {
     const salary = parseFloat(document.getElementById("salaryInput").value) || 0;
-    const budget = parseFloat(document.getElementById("budgetInput").value) || 0;
-    const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
 
-    if (salary > 0 && total > salary) {
+    if (salary > 0 && totalExpenses > salary) {
         showNotification("⚠️ Warning: Expenses exceed your salary!");
     }
-    if (budget > 0 && total > budget) {
-        showNotification("⚠️ Warning: Expenses exceed your budget!");
+    if (totalBudget > 0 && totalExpenses > totalBudget) {
+        showNotification("⚠️ Warning: Expenses exceed your budget allocations!");
     }
 }
 
 document.getElementById("salaryInput").addEventListener("input", checkSalaryBudget);
-document.getElementById("budgetInput").addEventListener("input", checkSalaryBudget);
 
-// ✅ Logout
+// ---------------- LOGOUT ----------------
 document.getElementById("logoutBtn").addEventListener("click", async () => {
     try {
         const res = await fetch(`${API_URL}/api/logout`, {

@@ -21,15 +21,21 @@ document.getElementById("loginForm").addEventListener("submit", async function (
             body: JSON.stringify({ username, password })
         });
 
-        if (!response.ok) {
-            throw new Error("Server error");
-        }
-
         const data = await response.json();
 
+        if (!response.ok) {
+            // ✅ Show actual backend error instead of generic "Server error"
+            statusMessage.textContent = data.message || "❌ Login failed.";
+            statusMessage.style.color = "red";
+            return;
+        }
+
         if (data.success) {
-            // ✅ No need to save token manually (stored in cookie)
-            window.location.href = "welcome.html";
+            statusMessage.textContent = "✅ Login successful! Redirecting...";
+            statusMessage.style.color = "green";
+            setTimeout(() => {
+                window.location.href = "welcome.html";
+            }, 800);
         } else {
             statusMessage.textContent = data.message || "❌ Invalid login credentials.";
             statusMessage.style.color = "red";

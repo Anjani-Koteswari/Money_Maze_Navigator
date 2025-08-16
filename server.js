@@ -116,8 +116,11 @@ app.get('/api/me', verifyToken, (req, res) => {
       if (err) return res.status(500).json({ success: false, message: 'Server error' });
       if (results.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
 
-      // ✅ Send user data directly (no "user" wrapper) so frontend works
-      res.json(results[0]);
+      // ✅ Wrapped response so frontend welcome.js works
+      res.json({
+        success: true,
+        user: results[0]
+      });
     }
   );
 });

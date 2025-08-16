@@ -181,6 +181,64 @@ app.post("/logout", (req, res) => {
   res.json({ success: true, message: "Logged out" });
 });
 
+/* ========= Budget & Expenses APIs ========= */
+
+// Get user budget
+app.get("/api/budget", verifyToken, (req, res) => {
+  db.query(
+    "SELECT * FROM budgets WHERE user_id = ?",
+    [req.userId],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ success: false, message: "DB error" });
+      res.json({ success: true, budget: results });
+    }
+  );
+});
+
+// Add new budget
+app.post("/api/budget", verifyToken, (req, res) => {
+  const { amount, category } = req.body;
+  db.query(
+    "INSERT INTO budgets (user_id, amount, category) VALUES (?, ?, ?)",
+    [req.userId, amount, category],
+    (err) => {
+      if (err)
+        return res.status(500).json({ success: false, message: "DB error" });
+      res.json({ success: true, message: "Budget added" });
+    }
+  );
+});
+
+// Get user expenses
+app.get("/api/expenses", verifyToken, (req, res) => {
+  db.query(
+    "SELECT * FROM expenses WHERE user_id = ?",
+    [req.userId],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ success: false, message: "DB error" });
+      res.json({ success: true, expenses: results });
+    }
+  );
+});
+
+// Add new expense
+app.post("/api/expenses", verifyToken, (req, res) => {
+  const { amount, category, description } = req.body;
+  db.query(
+    "INSERT INTO expenses (user_id, amount, category, description) VALUES (?, ?, ?, ?)",
+    [req.userId, amount, category, description],
+    (err) => {
+      if (err)
+        return res.status(500).json({ success: false, message: "DB error" });
+      res.json({ success: true, message: "Expense added" });
+    }
+  );
+});
+
+/* ========================================== */
+
 // ===== Default route (serve login.html) =====
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));

@@ -116,13 +116,54 @@ app.get('/api/me', verifyToken, (req, res) => {
       if (err) return res.status(500).json({ success: false, message: 'Server error' });
       if (results.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
 
-      // ✅ Wrapped response so frontend welcome.js works
       res.json({
         success: true,
         user: results[0]
       });
     }
   );
+});
+
+// ===== Expenses APIs =====
+
+// Create expense
+app.post('/api/expenses', verifyToken, (req, res) => {
+  const { name, amount } = req.body;
+  if (!name || !amount) {
+    return res.status(400).json({ success: false, message: 'Name and amount required' });
+  }
+
+  const expense = { user_id: req.userId, name, amount, date: new Date() };
+  db.query('INSERT INTO expenses SET ?', expense, (err, result) => {
+    if (err) return res.status(500).json({ success: false, message: 'Error saving expense' });
+
+    res.json({
+      id: result.insertId,
+      name,
+      amount,
+      date: expense.date
+    });
+  });
+});
+
+// List expenses
+app.get('/api/expenses', verifyToken, (req, res) => {
+  db.query('SELECT id, name, amount, date FROM expenses WHERE user_id = ? ORDER BY date DESC',
+    [req.userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ success: false, message: 'Error fetching expenses' });
+      res.json(results);
+    });
+});
+
+// Delete expense
+app.delete('/api/expenses/:id', verifyToken, (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM expenses WHERE id = ? AND user_id = ?', [id, req.userId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, message: 'Error deleting expense' });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Expense not found' });
+    res.json({ success: true, message: 'Expense deleted' });
+  });
 });
 
 // ===== Logout =====

@@ -1,34 +1,34 @@
-document.getElementById('loginForm').addEventListener('submit', async function (e) {
+const API_URL = "https://money-maze-navigator.onrender.com";
+
+document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
 
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const statusMessage = document.getElementById("loginStatus");
 
     try {
-        const response = await fetch('/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+        const response = await fetch(`${API_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
 
-        if (data.message === 'Welcome to Money Maze Navigator!') {
-            // ✅ Save logged-in user to localStorage
-            // Prefer backend userId, otherwise fallback to username
-            localStorage.setItem('loggedInUser', data.userId || username);
+        if (data.success) {
+            // ✅ Save JWT in localStorage
+            localStorage.setItem("authToken", data.token);
 
-            // Redirect to welcome page
-            window.location.href = 'welcome.html';
+            // ✅ Redirect to welcome page
+            window.location.href = "welcome.html";
         } else {
-            document.getElementById('loginStatus').textContent = data.message;
-            document.getElementById('loginStatus').style.color = 'red';
+            statusMessage.textContent = data.message;
+            statusMessage.style.color = "red";
         }
     } catch (error) {
-        console.error('Login error:', error);
-        document.getElementById('loginStatus').textContent = 'Something went wrong. Please try again.';
-        document.getElementById('loginStatus').style.color = 'red';
+        console.error("Login error:", error);
+        statusMessage.textContent = "❌ Something went wrong. Try again.";
+        statusMessage.style.color = "red";
     }
 });

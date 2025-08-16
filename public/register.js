@@ -3,6 +3,7 @@ const API_URL = "https://money-maze-navigator.onrender.com";
 document.getElementById('registerForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
+    // ✅ Use camelCase variables
     const firstName = document.getElementById('first_name').value.trim();
     const lastName = document.getElementById('last_name').value.trim();
     const email = document.getElementById('email').value.trim();
@@ -34,13 +35,14 @@ document.getElementById('registerForm').addEventListener('submit', function(even
         return;
     }
 
+    // ✅ Send camelCase to backend
     fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: "include",
         body: JSON.stringify({
-            first_name,   // ✅ match backend
-            last_name,     // ✅ match backend
+            firstName,
+            lastName,
             email,
             pincode,
             username,
@@ -52,7 +54,7 @@ document.getElementById('registerForm').addEventListener('submit', function(even
         statusMessage.textContent = data.message || "⚠️ Unknown response";
         statusMessage.style.color = data.success ? "green" : "red";
         if (data.success) {
-            // ✅ Consistent redirect
+            // ✅ Redirect after success
             window.location.href = "welcome.html";
         }
     })
@@ -133,5 +135,3 @@ function checkPasswordStrength(password) {
     }
     return "Weak";
 }
-
-

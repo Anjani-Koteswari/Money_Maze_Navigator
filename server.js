@@ -1,241 +1,140 @@
-const express = require('express');
-const mysql = require('mysql');
-const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
-const cors = require('cors');
-const path = require('path');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-const helmet = require('helmet');
+const express = require("express");
+const mysql = require("mysql2");
+const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const path = require("path");
+const helmet = require("helmet");
+require("dotenv").config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
-// ===== Middleware =====
+// ✅ Middleware
+app.use(helmet());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ Security headers with CSP fix
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        "default-src": ["'self'"],
-        "script-src": ["'self'", "https://cdn.jsdelivr.net"],
-        "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-        "font-src": ["'self'", "https://cdn.jsdelivr.net"],
-        "img-src": ["'self'", "data:", "https:"],
-      },
-    },
-  })
-);
-
-// ✅ Allow frontend to talk to backend with cookies
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000", // frontend
-  credentials: true
-}));
-
-// ===== Serve static frontend =====
-app.use(express.static(path.join(__dirname, 'public')));
-
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey123";
-
-// ===== MySQL connection =====
+// ✅ MySQL connection
 const db = mysql.createConnection({
-  host: process.env.DB_HOST || 'bkye9jogrdgovgyqdhf1-mysql.services.clever-cloud.com',
-  user: process.env.DB_USER || 'u2ssz7mhbct9qkak',
-  password: process.env.DB_PASSWORD || '52aT3tAbyryNqkk7rTLZ',
-  database: process.env.DB_NAME || 'bkye9jogrdgovgyqdhf1',
-  port: process.env.DB_PORT || 3306,
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "money_maze_navigator"
 });
 
 db.connect(err => {
-  if (err) throw err;
-  console.log('✅ MySQL Connected to Clever Cloud...');
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
+  console.log("✅ Connected to MySQL Database");
 });
 
-// ===== Middleware: verify JWT from cookies =====
+// ✅ Middleware: verify JWT token from cookie
 function verifyToken(req, res, next) {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ success: false, message: 'No token' });
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    req.userId = decoded.userId;
+  if (!token) {
+    return res.redirect("/");
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.redirect("/");
+    }
+    req.user = user;
     next();
   });
 }
 
-// ===== Register =====
-app.post('/register', (req, res) => {
+// ✅ Routes
+
+// --- Auth APIs ---
+app.post("/register", async (req, res) => {
   const { firstName, lastName, email, pincode, username, password } = req.body;
-  if (!firstName || !lastName || !email || !pincode || !username || !password) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
+
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password required" });
   }
-  const hashedPassword = bcrypt.hashSync(password, 8);
-  db.query(
-    'SELECT username, email FROM users WHERE username = ? OR email = ?',
-    [username, email],
-    (err, results) => {
-      if (err) return res.status(500).json({ success: false, message: 'Database error' });
-      if (results.length > 0) {
-        if (results.find(r => r.username === username)) {
-          return res.status(400).json({ success: false, message: 'Username already exists' });
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.query(
+      "INSERT INTO users (firstName, lastName, email, pincode, username, password) VALUES (?, ?, ?, ?, ?, ?)",
+      [firstName, lastName, email, pincode, username, hashedPassword],
+      (err) => {
+        if (err) {
+          console.error("Error inserting user:", err);
+          return res.status(500).json({ message: "Error registering user" });
         }
-        if (results.find(r => r.email === email)) {
-          return res.status(400).json({ success: false, message: 'Email already registered' });
-        }
+        res.status(201).json({ message: "User registered successfully" });
       }
-      const user = { firstName, lastName, email, pincode, username, password: hashedPassword };
-      db.query('INSERT INTO users SET ?', user, (err) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database insert error' });
-        res.status(200).json({ success: true, message: 'Registration successful' });
-      });
-    }
-  );
+    );
+  } catch (err) {
+    console.error("Error hashing password:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ===== Login =====
-app.post('/login', (req, res) => {
+app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    if (results.length === 0) return res.status(400).json({ success: false, message: 'Username not found' });
-    const user = results[0];
-    const passwordIsValid = bcrypt.compareSync(password, user.password);
-    if (!passwordIsValid) return res.status(401).json({ success: false, message: 'Invalid password' });
 
-    // Generate JWT and store in HTTP-only cookie
-    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '2h' });
-    res.cookie('token', token, {
+  db.query("SELECT * FROM users WHERE username = ?", [username], async (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error" });
+    if (results.length === 0) return res.status(400).json({ message: "Invalid credentials" });
+
+    const user = results[0];
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // Store token in cookie
+    res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 2 * 60 * 60 * 1000
+      maxAge: 3600000 // 1 hour
     });
-    res.status(200).json({ success: true, message: 'Login successful' });
+
+    res.json({ message: "Login successful" });
   });
 });
 
-// ===== Current User =====
-app.get('/api/me', verifyToken, (req, res) => {
-  db.query(
-    'SELECT id, username, email, firstName, lastName FROM users WHERE id = ?',
-    [req.userId],
-    (err, results) => {
-      if (err) return res.status(500).json({ success: false, message: 'Database error' });
-      if (results.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
-      res.json({ success: true, user: results[0] });
-    }
-  );
+app.post("/logout", (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "Logged out" });
 });
 
-// ===== Logout =====
-app.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
-  });
-  res.json({ success: true, message: 'Logged out' });
+// --- Pages ---
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// ===== Username & Email checks =====
-app.get('/check-username', (req, res) => {
-  const { username } = req.query;
-  db.query('SELECT id FROM users WHERE username = ?', [username], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    res.json({ available: results.length === 0 });
-  });
+app.get("/welcome", verifyToken, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "welcome.html"));
 });
 
-app.get('/check-email', (req, res) => {
-  const { email } = req.query;
-  db.query('SELECT id FROM users WHERE email = ?', [email], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    res.json({ available: results.length === 0 });
-  });
+// API to fetch logged-in user info
+app.get("/api/me", verifyToken, (req, res) => {
+  res.json({ user: req.user });
 });
 
-// ===== Expenses =====
-app.get('/api/expenses', verifyToken, (req, res) => {
-  db.query('SELECT * FROM expenses WHERE userId = ?', [req.userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    res.json(results);
-  });
+// Catch-all route → redirect to login
+app.get("*", (req, res) => {
+  res.redirect("/");
 });
 
-app.post('/api/expenses', verifyToken, (req, res) => {
-  const { name, amount } = req.body;
-  db.query('INSERT INTO expenses (userId, name, amount, date) VALUES (?, ?, ?, NOW())',
-    [req.userId, name, amount], (err, results) => {
-      if (err) return res.status(500).json({ success: false, message: 'Database insert error' });
-      res.json({ id: results.insertId, userId: req.userId, name, amount, date: new Date() });
-    });
-});
-
-app.delete('/api/expenses/:id', verifyToken, (req, res) => {
-  const { id } = req.params;
-  db.query('DELETE FROM expenses WHERE id = ? AND userId = ?', [id, req.userId], (err) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database delete error' });
-    res.json({ success: true });
-  });
-});
-
-app.put('/api/expenses/:id', verifyToken, (req, res) => {
-  const { id } = req.params;
-  const { amount } = req.body;
-  db.query('UPDATE expenses SET amount = ? WHERE id = ? AND userId = ?', [amount, id, req.userId], (err) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database update error' });
-    res.json({ success: true });
-  });
-});
-
-// ===== Salary =====
-app.get('/api/salary', verifyToken, (req, res) => {
-  db.query('SELECT salary FROM users WHERE id = ?', [req.userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    res.json({ salary: results[0]?.salary || 0 });
-  });
-});
-
-app.post('/api/salary', verifyToken, (req, res) => {
-  const { salary } = req.body;
-  db.query('UPDATE users SET salary = ? WHERE id = ?', [salary, req.userId], (err) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database update error' });
-    res.json({ success: true });
-  });
-});
-
-// ===== Budget =====
-app.get('/api/budget', verifyToken, (req, res) => {
-  db.query('SELECT * FROM budget WHERE userId = ?', [req.userId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    res.json(results);
-  });
-});
-
-app.post('/api/budget', verifyToken, (req, res) => {
-  const { name, amount } = req.body;
-  db.query('INSERT INTO budget (userId, name, amount) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = ?',
-    [req.userId, name, amount, amount], (err) => {
-      if (err) return res.status(500).json({ success: false, message: 'Database insert error' });
-      res.json({ success: true });
-    });
-});
-
-// ===== Default route =====
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-// ===== Fallback =====
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-// ===== Start server =====
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+// ✅ Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

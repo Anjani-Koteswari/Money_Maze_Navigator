@@ -1,282 +1,191 @@
-document.addEventListener('DOMContentLoaded', async function () {
-    let userId = null;
+const API_URL = "https://money-maze-navigator.onrender.com";
 
-    // ✅ Check session from backend
+// ✅ Check session on page load
+document.addEventListener("DOMContentLoaded", async () => {
     try {
-        const sessionRes = await fetch('https://money-maze-navigator.onrender.com/api/me', {
+        const res = await fetch(`${API_URL}/api/check-session`, {
             method: "GET",
             credentials: "include"
         });
 
-        if (!sessionRes.ok) {
-            window.location.href = "login.html";
-            return;
-        }
+        if (!res.ok) throw new Error("Session check failed");
+        const data = await res.json();
 
-        const userData = await sessionRes.json();
-        if (!userData.success || !userData.user) {
+        if (!data.loggedIn) {
             window.location.href = "login.html";
-            return;
+        } else {
+            document.getElementById("usernameDisplay").textContent = data.username;
+            fetchExpenses();
         }
-
-        userId = userData.user.id;
-        document.getElementById('welcomeUser').textContent = `Welcome, ${userData.user.username}`;
     } catch (err) {
-        console.error("Session check failed", err);
+        console.error("Session check error:", err);
         window.location.href = "login.html";
+    }
+});
+
+// ✅ Utility: Show notifications instead of alerts
+function showNotification(msg, type = "error") {
+    const notif = document.getElementById("notification");
+    notif.style.color = type === "error" ? "red" : "green";
+    notif.textContent = msg;
+    setTimeout(() => notif.textContent = "", 4000);
+}
+
+// ✅ Expense state
+let expenses = [];
+let chart;
+
+// Fetch Expenses
+async function fetchExpenses() {
+    try {
+        const res = await fetch(`${API_URL}/api/expenses`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch expenses");
+        expenses = await res.json();
+        updateTable();
+        updateChart();
+    } catch (err) {
+        console.error("Error loading expenses:", err);
+        showNotification("Unable to load expenses. Please try again later.");
+    }
+}
+
+// ✅ Add Expense
+document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById("expenseName").value.trim();
+    const amount = parseFloat(document.getElementById("expenseAmount").value.trim());
+
+    if (!name || isNaN(amount) || amount <= 0) {
+        showNotification("⚠️ Please enter valid expense details.");
         return;
     }
 
-    let expenses = [];
-    let budgets = {};
-    let salary = 0;
-
-    const expenseForm = document.getElementById('expense-input');
-    const expenseNameInput = document.getElementById('expenseName');
-    const expenseAmountInput = document.getElementById('expenseAmount');
-    const expenseTableBody = document.querySelector('#expenseTable tbody');
-    const showSummaryBtn = document.querySelector('.show-summary');
-    const setSalaryBtn = document.querySelector('.set-salary');
-    const showPieChartBtn = document.querySelector('.show-pie-chart');
-    const showBarChartBtn = document.querySelector('.show-bar-chart');
-    const setBudgetBtn = document.querySelector('.set-budget');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    const pieChartCanvas = document.getElementById('myPieChart');
-    const barChartCanvas = document.getElementById('myBarChart');
-    let currentChart = null;
-
-    // 🔹 Load initial data from backend
-    await loadData();
-
-    if (expenseForm) {
-        expenseForm.addEventListener('submit', async function (event) {
-            event.preventDefault();
-            await addExpense();
+    try {
+        const res = await fetch(`${API_URL}/api/expenses`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ name, amount })
         });
 
-        showSummaryBtn?.addEventListener('click', function () {
-            window.open('summary.html', '_blank');
+        if (!res.ok) throw new Error("Failed to add expense");
+
+        const newExpense = await res.json();
+
+        // ✅ Ensure id/date exist
+        expenses.push({
+            ...newExpense,
+            date: newExpense.date || new Date().toISOString(),
+            id: newExpense.id || Date.now()
         });
 
-        setSalaryBtn?.addEventListener('click', async function () {
-            const salaryInput = parseFloat(prompt('Enter your monthly Income'));
-            if (!isNaN(salaryInput) && salaryInput > 0) {
-                salary = salaryInput;
-                await apiPost("/api/salary", { salary });
-                alert(`Monthly Salary set: ${salary}`);
-            } else {
-                alert('Please enter a valid salary amount.');
-            }
-        });
-
-        showPieChartBtn?.addEventListener('click', showPieChart);
-        showBarChartBtn?.addEventListener('click', showBarChart);
-
-        setBudgetBtn?.addEventListener('click', async function () {
-            const budgetInputName = prompt('Enter the expense name for the budget:');
-            const budgetInputAmount = parseFloat(prompt('Enter the budget amount:'));
-            if (budgetInputName && !isNaN(budgetInputAmount) && budgetInputAmount > 0) {
-                budgets[budgetInputName] = budgetInputAmount;
-                await apiPost("/api/budget", { name: budgetInputName, amount: budgetInputAmount });
-                alert(`Budget for ${budgetInputName} set: ${budgetInputAmount}`);
-            } else {
-                alert('Please enter valid budget details.');
-            }
-        });
-
-        // 🔹 Logout
-        logoutBtn?.addEventListener('click', async function () {
-            await fetch('https://money-maze-navigator.onrender.com/api/logout', {
-                method: "POST",
-                credentials: "include"
-            });
-            window.location.href = 'login.html';
-        });
-    }
-
-    // === FUNCTIONS ===
-
-    async function loadData() {
-        expenses = await apiGet("/api/expenses") || [];
-        const salData = await apiGet("/api/salary") || {};
-        salary = salData.salary || 0;
-
-        // ✅ Convert budgets array → object for easy lookup
-        const budgetData = await apiGet("/api/budget") || [];
-        budgets = {};
-        budgetData.forEach(b => {
-            budgets[b.name] = b.amount;
-        });
-
+        document.getElementById("expenseForm").reset();
         updateTable();
+        updateChart();
+        checkSalaryBudget();
+    } catch (err) {
+        console.error("Add expense error:", err);
+        showNotification("❌ Could not add expense. Try again.");
     }
+});
 
-    async function addExpense() {
-        const name = expenseNameInput.value.trim();
-        const amount = parseFloat(expenseAmountInput.value);
+// ✅ Delete Expense
+async function deleteExpense(id) {
+    try {
+        const res = await fetch(`${API_URL}/api/expenses/${id}`, {
+            method: "DELETE",
+            credentials: "include"
+        });
 
-        if (name && !isNaN(amount)) {
-            const newExpense = await apiPost("/api/expenses", { name, amount });
-            if (newExpense) {
-                expenses.push(newExpense);
-                updateTable();
-                clearInputs();
-                checkBudgetAlert(name, amount);
-                checkSalaryAlert();
-            }
+        if (!res.ok) throw new Error("Failed to delete expense");
+
+        expenses = expenses.filter(exp => exp.id !== id);
+        updateTable();
+        updateChart();
+        checkSalaryBudget();
+    } catch (err) {
+        console.error("Delete expense error:", err);
+        showNotification("❌ Could not delete expense. Try again.");
+    }
+}
+
+// ✅ Update Table
+function updateTable() {
+    const tbody = document.getElementById("expenseTableBody");
+    tbody.innerHTML = "";
+
+    expenses.forEach(exp => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${exp.name}</td>
+            <td>₹${exp.amount}</td>
+            <td>${new Date(exp.date).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteExpense(${exp.id})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById("totalExpense").textContent =
+        expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2);
+}
+
+// ✅ Update Chart (dynamic colors)
+function updateChart() {
+    const ctx = document.getElementById("expenseChart").getContext("2d");
+    const data = expenses.reduce((acc, exp) => {
+        acc[exp.name] = (acc[exp.name] || 0) + exp.amount;
+        return acc;
+    }, {});
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: "pie",
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                data: Object.values(data),
+                backgroundColor: Object.keys(data).map((_, i) => `hsl(${i * 50}, 70%, 50%)`)
+            }]
+        }
+    });
+}
+
+// ✅ Salary & Budget Checks
+function checkSalaryBudget() {
+    const salary = parseFloat(document.getElementById("salaryInput").value) || 0;
+    const budget = parseFloat(document.getElementById("budgetInput").value) || 0;
+    const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+    if (salary > 0 && total > salary) {
+        showNotification("⚠️ Warning: Expenses exceed your salary!");
+    }
+    if (budget > 0 && total > budget) {
+        showNotification("⚠️ Warning: Expenses exceed your budget!");
+    }
+}
+
+document.getElementById("salaryInput").addEventListener("input", checkSalaryBudget);
+document.getElementById("budgetInput").addEventListener("input", checkSalaryBudget);
+
+// ✅ Logout
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+    try {
+        const res = await fetch(`${API_URL}/api/logout`, {
+            method: "POST",
+            credentials: "include"
+        });
+
+        if (res.ok) {
+            window.location.href = "login.html";
         } else {
-            alert('Please fill in all fields.');
+            showNotification("Logout failed. Try again.");
         }
-    }
-
-    function updateTable() {
-        expenseTableBody.innerHTML = '';
-        expenses.forEach((expense) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${new Date(expense.date).toLocaleDateString()}</td>
-                <td>${expense.name}</td>
-                <td>${expense.amount.toFixed(2)}</td>
-                <td>
-                    <button class="btn edit-expense" data-id="${expense.id}">Edit</button>
-                    <button class="btn delete-expense" data-id="${expense.id}">Delete</button>
-                </td>
-            `;
-            expenseTableBody.appendChild(row);
-        });
-        updateTotal();
-        attachEventListeners();
-    }
-
-    function updateTotal() {
-        const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-        document.getElementById('totalExpenditure').textContent = `Total Expenditure: ${total.toFixed(2)}`;
-    }
-
-    function checkSalaryAlert() {
-        const totalExpenditure = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-        if (salary > 0 && totalExpenditure > salary) {
-            alert('⚠️ Warning: Expenses exceed your salary!');
-        }
-    }
-
-    function clearInputs() {
-        expenseNameInput.value = '';
-        expenseAmountInput.value = '';
-    }
-
-    function checkBudgetAlert(name, amount) {
-        if (budgets[name] && amount > budgets[name]) {
-            alert(`⚠️ Warning: You have exceeded the budget for ${name}!`);
-        }
-    }
-
-    function showPieChart() {
-        hideCurrentChart();
-        pieChartCanvas.style.display = 'block';
-        const data = {};
-        expenses.forEach(expense => {
-            data[expense.name] = (data[expense.name] || 0) + expense.amount;
-        });
-        currentChart = new Chart(pieChartCanvas, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(data),
-                datasets: [{
-                    label: 'Expenses',
-                    data: Object.values(data),
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                }]
-            }
-        });
-    }
-
-    function showBarChart() {
-        hideCurrentChart();
-        barChartCanvas.style.display = 'block';
-        const data = {};
-        expenses.forEach(expense => {
-            data[expense.name] = (data[expense.name] || 0) + expense.amount;
-        });
-        currentChart = new Chart(barChartCanvas, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(data),
-                datasets: [{
-                    label: 'Expenses',
-                    data: Object.values(data),
-                    backgroundColor: '#36A2EB',
-                }]
-            }
-        });
-    }
-
-    function hideCurrentChart() {
-        if (currentChart) currentChart.destroy();
-        pieChartCanvas.style.display = 'none';
-        barChartCanvas.style.display = 'none';
-    }
-
-    function attachEventListeners() {
-        document.querySelectorAll('.delete-expense').forEach(button => {
-            button.addEventListener('click', async function () {
-                const id = this.getAttribute('data-id');
-                if (confirm('Are you sure you want to delete this expense?')) {
-                    await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
-                        method: "DELETE",
-                        credentials: "include"
-                    });
-                    expenses = expenses.filter(e => e.id != id);
-                    updateTable();
-                }
-            });
-        });
-
-        document.querySelectorAll('.edit-expense').forEach(button => {
-            button.addEventListener('click', async function () {
-                const id = this.getAttribute('data-id');
-                const expense = expenses.find(e => e.id == id);
-                const newAmount = parseFloat(prompt('Enter new amount:', expense.amount));
-                if (!isNaN(newAmount)) {
-                    await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        credentials: "include",
-                        body: JSON.stringify({ amount: newAmount })
-                    });
-                    expense.amount = newAmount;
-                    updateTable();
-                }
-            });
-        });
-    }
-
-    // 🔹 Helper API wrappers
-    async function apiGet(url) {
-        try {
-            const res = await fetch(`https://money-maze-navigator.onrender.com${url}`, {
-                credentials: "include"
-            });
-            if (res.ok) return await res.json();
-        } catch (err) {
-            console.error("GET failed:", url, err);
-        }
-        return null;
-    }
-
-    async function apiPost(url, body) {
-        try {
-            const res = await fetch(`https://money-maze-navigator.onrender.com${url}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(body)
-            });
-            if (res.ok) return await res.json();
-        } catch (err) {
-            console.error("POST failed:", url, err);
-        }
-        return null;
+    } catch (err) {
+        console.error("Logout error:", err);
+        showNotification("❌ Unable to logout.");
     }
 });

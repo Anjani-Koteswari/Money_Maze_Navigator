@@ -1,7 +1,23 @@
 document.addEventListener('DOMContentLoaded', async function () {
-    const userId = localStorage.getItem('loggedInUser'); // stored after login
+    let userId = null;
 
-    if (!userId) {
+    // ✅ Check session from backend
+    try {
+        const sessionRes = await fetch('https://money-maze-navigator.onrender.com/api/me', {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!sessionRes.ok) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        const userData = await sessionRes.json();
+        userId = userData.id;  // ✅ use DB userId
+        document.getElementById('welcomeUser').textContent = `Welcome, ${userData.username}`;
+    } catch (err) {
+        console.error("Session check failed", err);
         window.location.href = "login.html";
         return;
     }
@@ -45,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 await fetch(`https://money-maze-navigator.onrender.com/api/salary`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId, salary })
+                    credentials: "include",
+                    body: JSON.stringify({ salary })
                 });
                 alert(`Monthly Salary set: ${salary}`);
             } else {
@@ -64,7 +81,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 await fetch(`https://money-maze-navigator.onrender.com/api/budget`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId, name: budgetInputName, amount: budgetInputAmount })
+                    credentials: "include",
+                    body: JSON.stringify({ name: budgetInputName, amount: budgetInputAmount })
                 });
                 alert(`Budget for ${budgetInputName} set: ${budgetInputAmount}`);
             } else {
@@ -78,7 +96,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 method: "POST",
                 credentials: "include"
             });
-            localStorage.removeItem('loggedInUser');
             window.location.href = 'login.html';
         });
     }
@@ -86,17 +103,20 @@ document.addEventListener('DOMContentLoaded', async function () {
     // === FUNCTIONS ===
 
     async function loadData() {
-        // Fetch expenses
-        const expRes = await fetch(`https://money-maze-navigator.onrender.com/api/expenses?userId=${userId}`);
+        const expRes = await fetch(`https://money-maze-navigator.onrender.com/api/expenses`, {
+            credentials: "include"
+        });
         expenses = await expRes.json();
 
-        // Fetch salary
-        const salRes = await fetch(`https://money-maze-navigator.onrender.com/api/salary?userId=${userId}`);
+        const salRes = await fetch(`https://money-maze-navigator.onrender.com/api/salary`, {
+            credentials: "include"
+        });
         const salData = await salRes.json();
         salary = salData.salary || 0;
 
-        // Fetch budgets
-        const budRes = await fetch(`https://money-maze-navigator.onrender.com/api/budget?userId=${userId}`);
+        const budRes = await fetch(`https://money-maze-navigator.onrender.com/api/budget`, {
+            credentials: "include"
+        });
         const budData = await budRes.json();
         budgets = budData || {};
 
@@ -111,7 +131,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             const res = await fetch(`https://money-maze-navigator.onrender.com/api/expenses`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId, name, amount })
+                credentials: "include",
+                body: JSON.stringify({ name, amount })
             });
             const newExpense = await res.json();
 
@@ -127,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     function updateTable() {
         expenseTableBody.innerHTML = '';
-        expenses.forEach((expense, index) => {
+        expenses.forEach((expense) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${new Date(expense.date).toLocaleDateString()}</td>
@@ -220,7 +241,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const confirmDelete = confirm('Are you sure you want to delete this expense?');
                 if (confirmDelete) {
                     await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
-                        method: "DELETE"
+                        method: "DELETE",
+                        credentials: "include"
                     });
                     expenses = expenses.filter(e => e.id != id);
                     updateTable();
@@ -237,6 +259,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     await fetch(`https://money-maze-navigator.onrender.com/api/expenses/${id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
+                        credentials: "include",
                         body: JSON.stringify({ amount: newAmount })
                     });
                     expense.amount = newAmount;

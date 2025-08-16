@@ -6,7 +6,11 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     const statusMessage = document.getElementById("loginStatus");
-
+   if (!username || !password) {
+        statusMessage.textContent = "⚠️ Please enter both username and password.";
+        statusMessage.style.color = "red";
+        return;
+    }
     try {
         const response = await fetch(`${API_URL}/login`, {
             method: "POST",
@@ -30,3 +34,4 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         statusMessage.style.color = "red";
     }
 });
+

@@ -13,9 +13,14 @@ document.getElementById('registerForm').addEventListener('submit', function(even
 
     const statusMessage = document.getElementById("registrationStatus");
 
+    // Reset previous status
+    statusMessage.textContent = "";
+
     // Password strength check
     const strength = checkPasswordStrength(password);
-    document.getElementById("passwordStrength").textContent = `Password strength: ${strength}`;
+    document.getElementById("passwordStrength").textContent = password
+        ? `Password strength: ${strength}`
+        : "";
 
     if (password !== confirmPassword) {
         statusMessage.textContent = "❌ Passwords do not match";
@@ -32,16 +37,16 @@ document.getElementById('registerForm').addEventListener('submit', function(even
     fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: "include",  // ✅ important: send/receive cookies for session
+        credentials: "include",
         body: JSON.stringify({ firstName, lastName, email, pincode, username, password })
     })
     .then(response => response.json())
     .then(data => {
-        statusMessage.textContent = data.message;
+        statusMessage.textContent = data.message || "⚠️ Unknown response";
         statusMessage.style.color = data.success ? "green" : "red";
         if (data.success) {
-            // ✅ redirect only if backend session is set
-            window.location.href = "/welcome.html";
+            // ✅ Consistent redirect
+            window.location.href = "welcome.html";
         }
     })
     .catch(error => {
@@ -57,6 +62,10 @@ const usernameStatus = document.getElementById("usernameStatus");
 
 usernameInput.addEventListener("input", () => {
     const username = usernameInput.value.trim();
+    if (!username) {
+        usernameStatus.textContent = "";
+        return;
+    }
     if (username.length < 3) {
         usernameStatus.textContent = "⚠️ Username must be at least 3 characters";
         usernameStatus.style.color = "orange";
@@ -66,13 +75,10 @@ usernameInput.addEventListener("input", () => {
     fetch(`${API_URL}/check-username?username=${encodeURIComponent(username)}`)
         .then(res => res.json())
         .then(data => {
-            if (data.available) {
-                usernameStatus.textContent = "✅ Username is available";
-                usernameStatus.style.color = "green";
-            } else {
-                usernameStatus.textContent = "❌ Username already taken";
-                usernameStatus.style.color = "red";
-            }
+            usernameStatus.textContent = data.available
+                ? "✅ Username is available"
+                : "❌ Username already taken";
+            usernameStatus.style.color = data.available ? "green" : "red";
         })
         .catch(err => {
             console.error("Error checking username:", err);
@@ -86,6 +92,10 @@ const emailStatus = document.getElementById("emailStatus");
 
 emailInput.addEventListener("input", () => {
     const email = emailInput.value.trim();
+    if (!email) {
+        emailStatus.textContent = "";
+        return;
+    }
     if (!email.includes("@") || !email.includes(".")) {
         emailStatus.textContent = "⚠️ Enter a valid email address";
         emailStatus.style.color = "orange";
@@ -95,13 +105,10 @@ emailInput.addEventListener("input", () => {
     fetch(`${API_URL}/check-email?email=${encodeURIComponent(email)}`)
         .then(res => res.json())
         .then(data => {
-            if (data.available) {
-                emailStatus.textContent = "✅ Email is available";
-                emailStatus.style.color = "green";
-            } else {
-                emailStatus.textContent = "❌ Email already registered";
-                emailStatus.style.color = "red";
-            }
+            emailStatus.textContent = data.available
+                ? "✅ Email is available"
+                : "❌ Email already registered";
+            emailStatus.style.color = data.available ? "green" : "red";
         })
         .catch(err => {
             console.error("Error checking email:", err);
@@ -110,11 +117,12 @@ emailInput.addEventListener("input", () => {
 });
 
 function checkPasswordStrength(password) {
-    let strength = "Weak";
+    if (!password) return "Weak";
     if (password.length >= 8 && /[A-Z]/.test(password) && /\d/.test(password) && /[\W_]/.test(password)) {
-        strength = "Strong";
-    } else if (password.length >= 6 && (/[A-Z]/.test(password) || /\d/.test(password))) {
-        strength = "Medium";
+        return "Strong";
     }
-    return strength;
+    if (password.length >= 6 && (/[A-Z]/.test(password) || /\d/.test(password))) {
+        return "Medium";
+    }
+    return "Weak";
 }

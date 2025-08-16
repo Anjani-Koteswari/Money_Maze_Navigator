@@ -9,11 +9,13 @@
 </head>
 <body>
     <div class="container">
-    <!-- Logout Button in top-right corner -->
-    <button id="logoutBtn" class="logout-btn">Logout</button>
-        <h1>Expense Tracker</h1>
-
+        <!-- Logout Button in top-right corner -->
+        <button id="logoutBtn" class="logout-btn">Logout</button>
         
+        <h1>Expense Tracker</h1>
+        <!-- ✅ This is the missing element -->
+        <h2 id="welcomeUser" style="color: green; text-align:center; margin-bottom: 20px;"></h2>
+
         <!-- Expense Input Form -->
         <form id="expense-input">
             <input type="date" id="expenseDate" placeholder="dd-mm-yyyy" required>
@@ -62,4 +64,3 @@
     <script src="welcome.js"></script>
 </body>
 </html>
-

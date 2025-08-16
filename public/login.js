@@ -11,16 +11,14 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         const response = await fetch(`${API_URL}/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",  // ✅ important: send/receive cookies
             body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
 
         if (data.success) {
-            // ✅ Save JWT in localStorage
-            localStorage.setItem("authToken", data.token);
-
-            // ✅ Redirect to welcome page
+            // ✅ Token is already stored in HTTP-only cookie by backend
             window.location.href = "welcome.html";
         } else {
             statusMessage.textContent = data.message;

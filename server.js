@@ -6,16 +6,35 @@ const cors = require('cors');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 
 const app = express();
 
 // ===== Middleware =====
 app.use(bodyParser.json());
-app.use(cors({
-  origin: true,        // allow all origins (adjust later if needed)
-  credentials: true    // allow sending cookies
-}));
 app.use(cookieParser());
+
+// ✅ Security headers with CSP fix
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "https://cdn.jsdelivr.net"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        "font-src": ["'self'", "https://cdn.jsdelivr.net"],
+        "img-src": ["'self'", "data:", "https:"],
+      },
+    },
+  })
+);
+
+// ✅ Allow frontend to talk to backend with cookies
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:3000", // frontend
+  credentials: true
+}));
 
 // ===== Serve static frontend =====
 app.use(express.static(path.join(__dirname, 'public')));
@@ -90,15 +109,15 @@ app.post('/login', (req, res) => {
     const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '2h' });
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true,        // HTTPS
-      sameSite: 'none',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 2 * 60 * 60 * 1000
     });
     res.status(200).json({ success: true, message: 'Login successful' });
   });
 });
 
-// ===== Get current user =====
+// ===== Current User =====
 app.get('/api/me', verifyToken, (req, res) => {
   db.query(
     'SELECT id, username, email, firstName, lastName FROM users WHERE id = ?',
@@ -115,8 +134,8 @@ app.get('/api/me', verifyToken, (req, res) => {
 app.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none'
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
   });
   res.json({ success: true, message: 'Logged out' });
 });
@@ -188,7 +207,7 @@ app.post('/api/salary', verifyToken, (req, res) => {
   });
 });
 
-// ===== Budget ===== (fixed table name)
+// ===== Budget =====
 app.get('/api/budget', verifyToken, (req, res) => {
   db.query('SELECT * FROM budget WHERE userId = ?', [req.userId], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: 'Database error' });

@@ -8,12 +8,16 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 
 const app = express();
+
+// ===== Middleware =====
 app.use(bodyParser.json());
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: true,        // allow all origins (can restrict later)
+  credentials: true    // allow sending cookies
 }));
 app.use(cookieParser());
+
+// ===== Serve static frontend =====
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey123";
@@ -26,9 +30,10 @@ const db = mysql.createConnection({
   database: process.env.DB_NAME || 'bkye9jogrdgovgyqdhf1',
   port: process.env.DB_PORT || 3306,
 });
+
 db.connect(err => {
   if (err) throw err;
-  console.log('MySQL Connected to Clever Cloud...');
+  console.log('✅ MySQL Connected to Clever Cloud...');
 });
 
 // ===== Middleware: verify JWT from cookies =====
@@ -59,10 +64,12 @@ app.post('/register', (req, res) => {
       if (err) return res.status(500).json({ success: false, message: 'Server error' });
 
       if (results.length > 0) {
-        const takenUsername = results.find(r => r.username === username);
-        const takenEmail = results.find(r => r.email === email);
-        if (takenUsername) return res.status(400).json({ success: false, message: 'Username already exists' });
-        if (takenEmail) return res.status(400).json({ success: false, message: 'Email already registered' });
+        if (results.find(r => r.username === username)) {
+          return res.status(400).json({ success: false, message: 'Username already exists' });
+        }
+        if (results.find(r => r.email === email)) {
+          return res.status(400).json({ success: false, message: 'Email already registered' });
+        }
       }
 
       const user = { firstName, lastName, email, pincode, username, password: hashedPassword };
@@ -91,8 +98,8 @@ app.post('/login', (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true, // set true if using https
-      sameSite: 'none', // allow cross-site if frontend hosted separately
+      secure: true,        // ✅ true because Render uses HTTPS
+      sameSite: 'none',    // ✅ allows frontend from other domains
       maxAge: 2 * 60 * 60 * 1000
     });
 
@@ -102,17 +109,26 @@ app.post('/login', (req, res) => {
 
 // ===== Logout =====
 app.post('/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  });
   res.json({ success: true, message: 'Logged out' });
 });
 
-// ===== Protected example =====
+// ===== Protected Route =====
 app.get('/welcome', verifyToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'welcome.html'));
 });
 
-// Start
+// ===== Catch-all (for React SPA or fallback) =====
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ===== Start server =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
